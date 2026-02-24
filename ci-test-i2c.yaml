@@ -1,0 +1,84 @@
+esphome:
+  name: clrc663-i2c-test
+  platform: ESP32
+  board: esp32dev
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  
+  # Enable fallback hotspot
+  ap:
+    ssid: "CLRC663 I2C Test"
+    password: "12345678"
+
+captive_portal:
+
+logger:
+  level: DEBUG
+  logs:
+    clrc663: DEBUG
+    clrc663.i2c: VERBOSE
+
+api:
+  password: !secret api_password
+
+ota:
+  password: !secret ota_password
+
+# External component from this repository
+external_components:
+  - source:
+      type: local
+      path: components
+    components: [clrc663, clrc663_i2c]
+
+# I2C Bus Configuration
+i2c:
+  sda: GPIO21
+  scl: GPIO22
+  frequency: 400kHz
+  scan: true
+
+# CLRC663 I2C Component
+clrc663_i2c:
+  id: clrc663_board
+  address: 0x28
+  update_interval: 1s
+  
+  # Optional: Enable health checking (enabled by default)
+  health_check_enabled: true
+  health_check_interval: 60s
+  max_failed_checks: 3
+  auto_reset_on_failure: true
+  
+  # Optional: Hardware pins
+  # irq_pin: GPIO18
+  # reset_pin: GPIO19
+  
+  on_tag:
+    then:
+      - logger.log:
+          format: "Tag detected: %s"
+          args: ['x.c_str()']
+      - homeassistant.tag_scanned: !lambda 'return x;'
+  
+  on_tag_removed:
+    then:
+      - logger.log:
+          format: "Tag removed: %s"
+          args: ['x.c_str()']
+
+# Example Binary Sensors for specific tags
+binary_sensor:
+  - platform: clrc663
+    clrc663_id: clrc663_board
+    name: "Employee Badge"
+    uid: "74-10-37-94"  # Replace with your tag's UID
+    device_class: presence
+  
+  - platform: clrc663
+    clrc663_id: clrc663_board
+    name: "Guest Badge"
+    uid: "AB-CD-EF-12"  # Replace with your tag's UID
+    device_class: presence

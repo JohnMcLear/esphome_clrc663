@@ -1,0 +1,83 @@
+esphome:
+  name: clrc663-spi-test
+  platform: ESP32
+  board: esp32dev
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  
+  # Enable fallback hotspot
+  ap:
+    ssid: "CLRC663 SPI Test"
+    password: "12345678"
+
+captive_portal:
+
+logger:
+  level: DEBUG
+  logs:
+    clrc663: DEBUG
+    clrc663.spi: VERBOSE
+
+api:
+  password: !secret api_password
+
+ota:
+  password: !secret ota_password
+
+# External component from this repository
+external_components:
+  - source:
+      type: local
+      path: components
+    components: [clrc663, clrc663_spi]
+
+# SPI Bus Configuration
+spi:
+  clk_pin: GPIO18
+  miso_pin: GPIO19
+  mosi_pin: GPIO23
+
+# CLRC663 SPI Component
+clrc663_spi:
+  id: clrc663_board
+  cs_pin: GPIO5
+  update_interval: 1s
+  
+  # Optional: Enable health checking (enabled by default)
+  health_check_enabled: true
+  health_check_interval: 60s
+  max_failed_checks: 3
+  auto_reset_on_failure: true
+  
+  # Optional: Hardware pins
+  # irq_pin: GPIO17
+  # reset_pin: GPIO16
+  
+  on_tag:
+    then:
+      - logger.log:
+          format: "Tag detected: %s"
+          args: ['x.c_str()']
+      - homeassistant.tag_scanned: !lambda 'return x;'
+  
+  on_tag_removed:
+    then:
+      - logger.log:
+          format: "Tag removed: %s"
+          args: ['x.c_str()']
+
+# Example Binary Sensors for specific tags
+binary_sensor:
+  - platform: clrc663
+    clrc663_id: clrc663_board
+    name: "Employee Badge"
+    uid: "74-10-37-94"  # Replace with your tag's UID
+    device_class: presence
+  
+  - platform: clrc663
+    clrc663_id: clrc663_board
+    name: "Guest Badge"
+    uid: "AB-CD-EF-12"  # Replace with your tag's UID
+    device_class: presence
